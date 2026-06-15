@@ -8,8 +8,16 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
+function normalizePostgresUrl(url: string) {
+  if (url.includes("://")) {
+    return url;
+  }
+
+  return `postgresql://${url}`;
+}
+
 export const pool = new Pool({
-  connectionString,
+  connectionString: normalizePostgresUrl(connectionString),
   ssl: true,
 });
 

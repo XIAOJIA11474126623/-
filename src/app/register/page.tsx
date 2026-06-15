@@ -25,7 +25,11 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nickname, email, password }),
       });
-      const data = await response.json();
+      const data = (await response
+        .json()
+        .catch(() => ({ error: "注册服务暂时不可用，请稍后再试" }))) as {
+        error?: string;
+      };
 
       if (!response.ok) {
         setError(data.error || "注册失败");

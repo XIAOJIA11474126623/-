@@ -9,6 +9,16 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
+const databaseUrl = connectionString;
+
+function normalizePostgresUrl(url: string) {
+  if (url.includes("://")) {
+    return url;
+  }
+
+  return `postgresql://${url}`;
+}
+
 const sql = `
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -100,7 +110,7 @@ ON CONFLICT (user_id) DO NOTHING;
 `;
 
 async function main() {
-  const client = new Client({ connectionString, ssl: true });
+  const client = new Client({ connectionString: normalizePostgresUrl(databaseUrl), ssl: true });
   await client.connect();
   await client.query(sql);
 

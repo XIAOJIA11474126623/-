@@ -26,7 +26,11 @@ function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await response.json();
+      const data = (await response
+        .json()
+        .catch(() => ({ error: "登录服务暂时不可用，请稍后再试" }))) as {
+        error?: string;
+      };
 
       if (!response.ok) {
         setError(data.error || "登录失败");
