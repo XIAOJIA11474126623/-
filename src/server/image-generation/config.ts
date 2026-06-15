@@ -3,9 +3,7 @@ export const imageGenerationConfig = {
     ? process.env.IMAGE_GEN_ENABLED === "true"
     : true,
   provider: process.env.IMAGE_GEN_PROVIDER || "doubao",
-  apiKey:
-    process.env.IMAGE_GEN_API_KEY ||
-    "ark-9a414172-aafe-438a-9674-823ce9f05ce4-f8d52",
+  apiKey: process.env.IMAGE_GEN_API_KEY,
   endpoint:
     process.env.IMAGE_GEN_API_BASE ||
     "https://ark.cn-beijing.volces.com/api/v3/images/generations",

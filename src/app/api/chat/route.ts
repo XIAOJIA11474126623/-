@@ -206,23 +206,37 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (shouldSendPhoto(messages, collectedTags)) {
-          const scene = collectedTags[0] || "自拍";
+        const photoRequest = getPhotoRequest(messages);
+
+        if (shouldSendPhoto(messages, collectedTags, photoRequest.explicit)) {
+          const scene = collectedTags[0] || photoRequest.scene || "日常照片";
 
           let imageUrl: string | null = null;
           let imageScene = scene;
 
-          if (imageGenerationConfig.generateInChat) {
+          if (shouldGeneratePhoto(photoRequest.explicit)) {
             try {
-              imageUrl = await generateDoubaoImage(scene, character.id);
+              imageUrl = await generateDoubaoImage(
+                buildPhotoPrompt({
+                  scene,
+                  lastUserMessage: photoRequest.lastUserMessage,
+                  characterId: character.id,
+                  currentTimeLabel: currentTimeContext.label,
+                }),
+                character.id
+              );
             } catch (error) {
               console.error("Image generation failed, fallback to preset photo:", error);
             }
           }
 
           if (!imageUrl) {
-            imageUrl = character.avatar;
-            imageScene = scene;
+            const fallbackPhoto = pickFallbackPhoto(
+              character.lifePhotos,
+              `${scene} ${photoRequest.lastUserMessage} ${messages.length}`
+            );
+            imageUrl = fallbackPhoto.url;
+            imageScene = fallbackPhoto.scene;
           }
 
           controller.enqueue(
@@ -317,8 +331,13 @@ function extractCompletedText(event: unknown): string {
 
 function shouldSendPhoto(
   messages: Array<{ role: string; content: string }>,
-  collectedTags: string[]
+  collectedTags: string[],
+  explicitPhotoRequest: boolean
 ): boolean {
+  if (explicitPhotoRequest) {
+    return true;
+  }
+
   if (collectedTags.length === 0) {
     return false;
   }
@@ -326,15 +345,6 @@ function shouldSendPhoto(
   const lastUserMessage = [...messages]
     .reverse()
     .find((message) => message.role === "user")?.content || "";
-
-  const explicitPhotoRequest =
-    /(照片|图片|自拍|相片|图|拍.*给我|发.*(照片|图片|自拍|图)|看看你|看一下你|给我看)/.test(
-      lastUserMessage
-    );
-
-  if (explicitPhotoRequest) {
-    return true;
-  }
 
   const visualTopic =
     /(吃|喝|咖啡|奶茶|甜品|蛋糕|风景|花|阳光|逛街|穿搭|书|窗边|旅行|出去玩)/.test(
@@ -345,6 +355,98 @@ function shouldSendPhoto(
   ).length;
 
   return visualTopic && assistantMessageCount > 0 && assistantMessageCount % 5 === 0;
+}
+
+function getPhotoRequest(messages: Array<{ role: string; content: string }>): {
+  explicit: boolean;
+  lastUserMessage: string;
+  scene: string;
+} {
+  const lastUserMessage = [...messages]
+    .reverse()
+    .find((message) => message.role === "user")?.content || "";
+  const explicit =
+    /(照片|图片|自拍|相片|图|拍.*给我|发.*(照片|图片|自拍|图)|看看你|看一下你|给我看|多拍|再拍|来一张|发来看看)/.test(
+      lastUserMessage
+    );
+
+  return {
+    explicit,
+    lastUserMessage,
+    scene: inferPhotoScene(lastUserMessage),
+  };
+}
+
+function shouldGeneratePhoto(explicitPhotoRequest: boolean): boolean {
+  return imageGenerationConfig.enabled && (explicitPhotoRequest || imageGenerationConfig.generateInChat);
+}
+
+function inferPhotoScene(message: string): string {
+  const sceneMap: Array<[RegExp, string]> = [
+    [/(旅游|出去玩|出游|旅行|山洞|山|海边|公园|风景|户外|小野花)/, "旅行户外随手拍"],
+    [/(自拍|看看你|看一下你|给我看)/, "自然自拍"],
+    [/(美食|吃|喝|咖啡|奶茶|甜品|蛋糕|餐厅)/, "美食日常照片"],
+    [/(穿搭|衣服|逛街|购物)/, "逛街穿搭照片"],
+    [/(读书|书|咖啡馆|窗边)/, "安静室内生活照片"],
+    [/(花|阳光|治愈|花园)/, "治愈系日常照片"],
+  ];
+
+  for (const [pattern, scene] of sceneMap) {
+    if (pattern.test(message)) {
+      return scene;
+    }
+  }
+
+  return "生活随手拍";
+}
+
+function buildPhotoPrompt({
+  scene,
+  lastUserMessage,
+  characterId,
+  currentTimeLabel,
+}: {
+  scene: string;
+  lastUserMessage: string;
+  characterId: string;
+  currentTimeLabel: string;
+}): string {
+  const characterStyle: Record<string, string> = {
+    xiaomei: "活泼可爱的年轻女生，邻家感，表情自然灵动",
+    dajiejie: "知性成熟的女性，温柔从容，气质优雅",
+    xuemei: "青春感学妹，略带傲娇，清爽自然",
+    zhiyu: "温柔治愈系女生，轻柔亲和，安静温暖",
+  };
+
+  return [
+    scene,
+    `用户想看：${lastUserMessage}`,
+    `当前时间参考：${currentTimeLabel}`,
+    characterStyle[characterId] || "温暖自然的女性角色",
+    "生成一张新的真实生活照片，不要复用头像，不要棚拍，不要证件照",
+    "照片要符合用户提到的场景和动作，像手机随手拍，构图自然",
+  ].join("，");
+}
+
+function pickFallbackPhoto(
+  photos: Array<{ url: string; scene: string }>,
+  seedText: string
+): { url: string; scene: string } {
+  if (photos.length === 0) {
+    throw new Error("角色没有可用预置照片");
+  }
+
+  const matchedPhoto = photos.find((photo) => seedText.includes(photo.scene));
+  if (matchedPhoto) {
+    return matchedPhoto;
+  }
+
+  let hash = 0;
+  for (const char of seedText) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+
+  return photos[hash % photos.length];
 }
 
 function getCurrentBeijingTimeContext(): { label: string; period: string } {
