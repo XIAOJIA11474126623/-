@@ -2,13 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
 import { useState } from "react";
-import {
-  DEFAULT_SCRIPT_ID,
-  SCRIPT_URL,
-  Turnstile,
-} from "@marsidev/react-turnstile";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -69,20 +64,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <>
-      {turnstileSiteKey ? (
-        <Script
-          id={DEFAULT_SCRIPT_ID}
-          src={SCRIPT_URL}
-          strategy="afterInteractive"
-          onError={() => {
-            setTurnstileToken("");
-            setTurnstileStatus("script-error");
-          }}
-        />
-      ) : null}
-
-      <main className="min-h-screen flex items-center justify-center px-4 py-10">
+    <main className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#f0e6d3]">创建账号</h1>
@@ -158,8 +140,13 @@ export default function RegisterPage() {
               <Turnstile
                 id="register-turnstile"
                 siteKey={turnstileSiteKey}
-                injectScript={false}
                 options={{ language: "zh-CN", size: "flexible", theme: "dark" }}
+                scriptOptions={{
+                  onError: () => {
+                    setTurnstileToken("");
+                    setTurnstileStatus("script-error");
+                  },
+                }}
                 onWidgetLoad={() => setTurnstileStatus("ready")}
                 onSuccess={(token) => {
                   setTurnstileToken(token);
@@ -194,8 +181,7 @@ export default function RegisterPage() {
             去登录
           </Link>
         </p>
-        </div>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }
