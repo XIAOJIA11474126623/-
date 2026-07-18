@@ -2,12 +2,23 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
+import Script from "next/script";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type TurnstileStatus = "loading" | "ready" | "script-error";
+
+const TURNSTILE_SCRIPT_URL =
+  "https://challenges.cloudflare.com/turnstile/v0/api.js";
+
+declare global {
+  interface Window {
+    __registerTurnstileSuccess?: (token: string) => void;
+    __registerTurnstileExpired?: () => void;
+    __registerTurnstileError?: () => void;
+  }
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,6 +31,28 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    window.__registerTurnstileSuccess = (token: string) => {
+      setTurnstileToken(token);
+      setTurnstileStatus("ready");
+      setError("");
+    };
+    window.__registerTurnstileExpired = () => {
+      setTurnstileToken("");
+    };
+    window.__registerTurnstileError = () => {
+      setTurnstileToken("");
+      setTurnstileStatus("ready");
+      setError("人机验证暂时失败，请刷新页面后重试");
+    };
+
+    return () => {
+      delete window.__registerTurnstileSuccess;
+      delete window.__registerTurnstileExpired;
+      delete window.__registerTurnstileError;
+    };
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,6 +98,19 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-10">
+      {turnstileSiteKey ? (
+        <Script
+          id="cf-turnstile-script"
+          src={TURNSTILE_SCRIPT_URL}
+          strategy="afterInteractive"
+          onLoad={() => setTurnstileStatus("ready")}
+          onError={() => {
+            setTurnstileToken("");
+            setTurnstileStatus("script-error");
+          }}
+        />
+      ) : null}
+
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#f0e6d3]">创建账号</h1>
@@ -137,27 +183,15 @@ export default function RegisterPage() {
                   人机验证加载失败，请刷新页面或关闭拦截插件后重试
                 </p>
               ) : null}
-              <Turnstile
-                id="register-turnstile"
-                siteKey={turnstileSiteKey}
-                options={{ language: "zh-CN", size: "flexible", theme: "dark" }}
-                scriptOptions={{
-                  onError: () => {
-                    setTurnstileToken("");
-                    setTurnstileStatus("script-error");
-                  },
-                }}
-                onWidgetLoad={() => setTurnstileStatus("ready")}
-                onSuccess={(token) => {
-                  setTurnstileToken(token);
-                  setTurnstileStatus("ready");
-                }}
-                onExpire={() => setTurnstileToken("")}
-                onError={() => {
-                  setTurnstileToken("");
-                  setTurnstileStatus("ready");
-                  setError("人机验证暂时失败，请刷新页面后重试");
-                }}
+              <div
+                className="cf-turnstile"
+                data-sitekey={turnstileSiteKey}
+                data-callback="__registerTurnstileSuccess"
+                data-expired-callback="__registerTurnstileExpired"
+                data-error-callback="__registerTurnstileError"
+                data-language="zh-CN"
+                data-size="flexible"
+                data-theme="dark"
               />
             </div>
           ) : (
