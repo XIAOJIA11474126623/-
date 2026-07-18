@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getCharacterById } from "@/lib/characters";
+import { uploadRemoteImageToR2 } from "@/lib/r2/generated-image";
 import { generateDoubaoImage } from "@/server/image-generation/doubao";
 import { imageGenerationConfig } from "@/server/image-generation/config";
 
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
 
           if (shouldGeneratePhoto(photoRequest.explicit)) {
             try {
-              imageUrl = await generateDoubaoImage(
+              imageUrl = await generatePermanentDoubaoImage(
                 buildPhotoPrompt({
                   scene,
                   lastUserMessage: photoRequest.lastUserMessage,
@@ -426,6 +427,20 @@ function buildPhotoPrompt({
     "生成一张新的真实生活照片，不要复用头像，不要棚拍，不要证件照",
     "照片要符合用户提到的场景和动作，像手机随手拍，构图自然",
   ].join("，");
+}
+
+async function generatePermanentDoubaoImage(
+  prompt: string,
+  characterId: string,
+): Promise<string> {
+  const temporaryImageUrl = await generateDoubaoImage(prompt, characterId);
+
+  try {
+    return await uploadRemoteImageToR2(temporaryImageUrl);
+  } catch (error) {
+    console.error("Upload generated chat image to R2 failed:", error);
+    return temporaryImageUrl;
+  }
 }
 
 function pickFallbackPhoto(

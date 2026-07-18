@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { uploadRemoteImageToR2 } from "@/lib/r2/generated-image";
 import { generateDoubaoImage } from "@/server/image-generation/doubao";
 import { imageGenerationConfig } from "@/server/image-generation/config";
 
@@ -72,8 +73,22 @@ async function generateImage(prompt: string, characterId: string): Promise<strin
     case "doubao":
     case "volcengine":
     case "ark":
-      return await generateDoubaoImage(prompt, characterId);
+      return await generatePermanentDoubaoImage(prompt, characterId);
     default:
       throw new Error(`不支持的图片生成提供者: ${imageGenerationConfig.provider}`);
+  }
+}
+
+async function generatePermanentDoubaoImage(
+  prompt: string,
+  characterId: string,
+): Promise<string> {
+  const temporaryImageUrl = await generateDoubaoImage(prompt, characterId);
+
+  try {
+    return await uploadRemoteImageToR2(temporaryImageUrl);
+  } catch (error) {
+    console.error("Upload generated image to R2 failed:", error);
+    return temporaryImageUrl;
   }
 }
