@@ -9,7 +9,7 @@ import {
   hashSessionToken,
   sessionCookieName,
 } from "@/lib/auth";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendDailyLoveLetter } from "@/lib/email";
 import { hashPassword } from "@/lib/password";
 import { createInitialPoints } from "@/lib/points";
 
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
     const pointsBalance = await createInitialPoints(user.id);
 
-    await sendWelcomeEmail(user.email, user.nickname);
+    await sendDailyLoveLetter(user.email, user.nickname);
 
     const response = NextResponse.json({
       user: {

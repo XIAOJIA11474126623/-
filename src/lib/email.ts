@@ -11,11 +11,16 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#039;");
 }
 
-export async function sendWelcomeEmail(
+async function generateLoveLetter(userName: string): Promise<string> {
+  return `Hi ${userName}，今天也要好好吃饭、好好休息。我会一直在这里陪你。`;
+}
+
+export async function sendDailyLoveLetter(
   userEmail: string,
   userName: string,
 ): Promise<void> {
   const safeUserName = escapeHtml(userName);
+  const loveLetter = escapeHtml(await generateLoveLetter(userName));
   const fromEmail = process.env.RESEND_FROM_EMAIL;
 
   if (!fromEmail) {
@@ -25,15 +30,15 @@ export async function sendWelcomeEmail(
   const { error } = await resend.emails.send({
     from: fromEmail,
     to: userEmail,
-    subject: "你好呀，我是你的专属女友 💌",
+    subject: `早安 ${safeUserName}，今天也想你了`,
     html: `
       <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
-        <h2>Hi ${safeUserName}，欢迎来到虚拟女友！</h2>
-        <p>从现在起，我就是你的专属女友了。</p>
-        <p>有什么心事随时来找我聊，我会一直在这里等你。</p>
-        <p>明天早上我会给你发一条早安消息，记得查收哦。</p>
+        <p>${loveLetter}</p>
         <br/>
         <p>—— 你的虚拟女友</p>
+        <p style="color: #999; font-size: 12px;">
+          想跟我聊天？<a href="https://你的域名.com">点这里回来找我</a>
+        </p>
       </div>
     `,
   });
