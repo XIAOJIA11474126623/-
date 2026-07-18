@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useState } from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
+import {
+  DEFAULT_SCRIPT_ID,
+  SCRIPT_URL,
+  Turnstile,
+} from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+type TurnstileStatus = "loading" | "ready" | "error";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,14 +20,27 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileStatus, setTurnstileStatus] =
+    useState<TurnstileStatus>("loading");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
     setError("");
+
+    if (!turnstileSiteKey) {
+      setError("人机验证暂未配置，请稍后再试");
+      return;
+    }
+
+    if (!turnstileToken) {
+      setError("请先完成人机验证");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const response = await fetch("/api/auth/register", {
@@ -49,7 +69,20 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-10">
+    <>
+      {turnstileSiteKey ? (
+        <Script
+          id={DEFAULT_SCRIPT_ID}
+          src={SCRIPT_URL}
+          strategy="afterInteractive"
+          onError={() => {
+            setTurnstileToken("");
+            setTurnstileStatus("error");
+          }}
+        />
+      ) : null}
+
+      <main className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#f0e6d3]">创建账号</h1>
@@ -111,15 +144,39 @@ export default function RegisterPage() {
           )}
 
           {turnstileSiteKey ? (
-            <div className="overflow-hidden rounded-lg bg-white/5">
+            <div className="relative min-h-[65px] overflow-hidden rounded-lg bg-white/5">
+              {turnstileStatus === "loading" ? (
+                <p className="absolute inset-0 flex items-center justify-center text-sm text-[#8b8ba3]">
+                  正在加载人机验证...
+                </p>
+              ) : null}
+              {turnstileStatus === "error" ? (
+                <p className="absolute inset-0 flex items-center justify-center px-3 text-center text-sm text-red-200">
+                  人机验证加载失败，请刷新页面或关闭拦截插件后重试
+                </p>
+              ) : null}
               <Turnstile
+                id="register-turnstile"
                 siteKey={turnstileSiteKey}
-                onSuccess={setTurnstileToken}
+                injectScript={false}
+                options={{ language: "zh-CN", size: "flexible", theme: "dark" }}
+                onWidgetLoad={() => setTurnstileStatus("ready")}
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setTurnstileStatus("ready");
+                }}
                 onExpire={() => setTurnstileToken("")}
-                onError={() => setTurnstileToken("")}
+                onError={() => {
+                  setTurnstileToken("");
+                  setTurnstileStatus("error");
+                }}
               />
             </div>
-          ) : null}
+          ) : (
+            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              人机验证暂未配置，请稍后再试
+            </p>
+          )}
 
           <Button
             type="submit"
@@ -136,7 +193,8 @@ export default function RegisterPage() {
             去登录
           </Link>
         </p>
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   );
 }
