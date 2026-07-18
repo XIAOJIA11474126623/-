@@ -229,7 +229,6 @@ function CharacterCard({ character }: { character: Character }) {
                     boxShadow: `0 0 0 6px #0b0b12, 0 0 34px ${character.accentColor}33`,
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <motion.img
                     src={character.avatar}
                     alt={character.name}

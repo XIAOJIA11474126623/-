@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 let s3Client: S3Client | null = null;
 
@@ -40,4 +40,38 @@ export async function uploadToR2(
   );
 
   return `${getRequiredEnv("R2_PUBLIC_URL")}/${fileName}`;
+}
+
+export function getR2ObjectKeyFromPublicUrl(imageUrl: string): string | null {
+  const publicUrl = new URL(getRequiredEnv("R2_PUBLIC_URL"));
+  const parsedUrl = new URL(imageUrl);
+
+  if (parsedUrl.origin !== publicUrl.origin) {
+    return null;
+  }
+
+  return decodeURIComponent(parsedUrl.pathname.replace(/^\/+/, ""));
+}
+
+export async function getR2Object(fileName: string): Promise<{
+  body: Uint8Array;
+  contentType: string;
+}> {
+  const object = await getS3Client().send(
+    new GetObjectCommand({
+      Bucket: getRequiredEnv("R2_BUCKET_NAME"),
+      Key: fileName,
+    }),
+  );
+
+  if (!object.Body) {
+    throw new Error("R2 object body is empty");
+  }
+
+  const body = await object.Body.transformToByteArray();
+
+  return {
+    body,
+    contentType: object.ContentType || "application/octet-stream",
+  };
 }

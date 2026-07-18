@@ -13,6 +13,14 @@ interface ChatMessage {
   isStreaming?: boolean;
 }
 
+function getDisplayImageUrl(imageUrl: string): string {
+  if (imageUrl.includes(".r2.dev/")) {
+    return `/api/r2-image?url=${encodeURIComponent(imageUrl)}`;
+  }
+
+  return imageUrl;
+}
+
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -385,30 +393,33 @@ export default function ChatPage() {
                     {/* Images */}
                     {msg.images && msg.images.length > 0 && (
                       <div className="flex flex-wrap gap-2 max-w-[280px]">
-                        {msg.images.map((imgUrl, idx) => (
-                          <div
-                            key={idx}
-                            className="rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                            style={{
-                              width:
-                                msg.images!.length === 1 ? "240px" : "calc(50% - 4px)",
-                            }}
-                            onClick={() => {
-                              const w = window.open(imgUrl, "_blank");
-                              if (w) w.focus();
-                            }}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={imgUrl}
-                              alt={`分享的图片 ${idx + 1}`}
-                              className="w-full object-cover"
+                        {msg.images.map((imgUrl, idx) => {
+                          const displayImageUrl = getDisplayImageUrl(imgUrl);
+                          return (
+                            <div
+                              key={idx}
+                              className="rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                               style={{
-                                height: msg.images!.length === 1 ? "180px" : "120px",
+                                width:
+                                  msg.images!.length === 1 ? "240px" : "calc(50% - 4px)",
                               }}
-                            />
-                          </div>
-                        ))}
+                              onClick={() => {
+                                const w = window.open(displayImageUrl, "_blank");
+                                if (w) w.focus();
+                              }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={displayImageUrl}
+                                alt={`分享的图片 ${idx + 1}`}
+                                className="w-full object-cover"
+                                style={{
+                                  height: msg.images!.length === 1 ? "180px" : "120px",
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
