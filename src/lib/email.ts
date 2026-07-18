@@ -12,14 +12,19 @@ function escapeHtml(value: string): string {
 }
 
 export async function sendWelcomeEmail(
-  _userEmail: string,
+  userEmail: string,
   userName: string,
 ): Promise<void> {
   const safeUserName = escapeHtml(userName);
+  const fromEmail = process.env.RESEND_FROM_EMAIL;
+
+  if (!fromEmail) {
+    throw new Error("Missing required environment variable: RESEND_FROM_EMAIL");
+  }
 
   const { error } = await resend.emails.send({
-    from: "虚拟女友 <onboarding@resend.dev>",
-    to: "2057841480@qq.com",
+    from: fromEmail,
+    to: userEmail,
     subject: "你好呀，我是你的专属女友 💌",
     html: `
       <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">

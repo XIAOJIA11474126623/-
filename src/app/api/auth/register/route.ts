@@ -84,9 +84,7 @@ export async function POST(request: Request) {
 
     const pointsBalance = await createInitialPoints(user.id);
 
-    sendWelcomeEmail(user.email, user.nickname).catch((error) => {
-      console.error("Welcome email failed", error);
-    });
+    await sendWelcomeEmail(user.email, user.nickname);
 
     const response = NextResponse.json({
       user: {
