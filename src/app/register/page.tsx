@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type TurnstileStatus = "loading" | "ready" | "error";
+type TurnstileStatus = "loading" | "ready" | "script-error";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -77,7 +77,7 @@ export default function RegisterPage() {
           strategy="afterInteractive"
           onError={() => {
             setTurnstileToken("");
-            setTurnstileStatus("error");
+            setTurnstileStatus("script-error");
           }}
         />
       ) : null}
@@ -150,7 +150,7 @@ export default function RegisterPage() {
                   正在加载人机验证...
                 </p>
               ) : null}
-              {turnstileStatus === "error" ? (
+              {turnstileStatus === "script-error" ? (
                 <p className="absolute inset-0 flex items-center justify-center px-3 text-center text-sm text-red-200">
                   人机验证加载失败，请刷新页面或关闭拦截插件后重试
                 </p>
@@ -168,7 +168,8 @@ export default function RegisterPage() {
                 onExpire={() => setTurnstileToken("")}
                 onError={() => {
                   setTurnstileToken("");
-                  setTurnstileStatus("error");
+                  setTurnstileStatus("ready");
+                  setError("人机验证暂时失败，请刷新页面后重试");
                 }}
               />
             </div>
