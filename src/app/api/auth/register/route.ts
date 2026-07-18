@@ -9,6 +9,7 @@ import {
   hashSessionToken,
   sessionCookieName,
 } from "@/lib/auth";
+import { sendWelcomeEmail } from "@/lib/email";
 import { hashPassword } from "@/lib/password";
 import { createInitialPoints } from "@/lib/points";
 
@@ -82,6 +83,10 @@ export async function POST(request: Request) {
     });
 
     const pointsBalance = await createInitialPoints(user.id);
+
+    sendWelcomeEmail(user.email, user.nickname).catch((error) => {
+      console.error("Welcome email failed", error);
+    });
 
     const response = NextResponse.json({
       user: {

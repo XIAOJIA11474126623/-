@@ -19,7 +19,7 @@ export async function sendWelcomeEmail(
     process.env.RESEND_FROM_EMAIL || "虚拟女友 <onboarding@resend.dev>";
   const safeUserName = escapeHtml(userName);
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: fromEmail,
     to: userEmail,
     subject: "你好呀，我是你的专属女友 💌",
@@ -34,4 +34,8 @@ export async function sendWelcomeEmail(
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(`Resend failed: ${error.message}`);
+  }
 }
