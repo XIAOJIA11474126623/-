@@ -84,7 +84,9 @@ export async function POST(request: Request) {
 
     const pointsBalance = await createInitialPoints(user.id);
 
-    await sendDailyLoveLetter(user.email, user.nickname);
+    sendDailyLoveLetter(user.email, user.nickname).catch((error: unknown) => {
+      console.error("Welcome love letter failed", error);
+    });
 
     const response = NextResponse.json({
       user: {
