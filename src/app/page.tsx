@@ -505,7 +505,13 @@ export default function HomePage() {
           animate={{ opacity: 1 }}
           transition={{ delay: shouldReduceMotion ? 0 : 0.8, duration: 0.4 }}
         >
-          每段对话都值得被温柔以待
+          每段对话都值得被温柔以待 · 有问题或建议？
+          <a
+            className="text-[#ff9fbd] transition-colors hover:text-[#ffbed2]"
+            href="mailto:1474126623@qq.com"
+          >
+            1474126623@qq.com
+          </a>
         </motion.p>
       </div>
     </main>
