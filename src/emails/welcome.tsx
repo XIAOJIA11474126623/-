@@ -13,9 +13,15 @@ interface WelcomeEmailProps {
   userName: string;
   loveLetter: string;
   appUrl: string;
+  feedbackEmail: string;
 }
 
-export function WelcomeEmail({ userName, loveLetter, appUrl }: WelcomeEmailProps) {
+export function WelcomeEmail({
+  userName,
+  loveLetter,
+  appUrl,
+  feedbackEmail,
+}: WelcomeEmailProps) {
   return (
     <Html lang="zh-CN">
       <Head />
@@ -30,6 +36,12 @@ export function WelcomeEmail({ userName, loveLetter, appUrl }: WelcomeEmailProps
             <Button href={appUrl} style={button}>
               回来找我聊天
             </Button>
+            <Text style={footer}>
+              有问题或建议？联系我们：
+              <a href={`mailto:${feedbackEmail}`} style={footerLink}>
+                {feedbackEmail}
+              </a>
+            </Text>
           </Section>
         </Container>
       </Body>
@@ -88,4 +100,16 @@ const button = {
   fontWeight: "700",
   padding: "12px 18px",
   textDecoration: "none",
+};
+
+const footer = {
+  margin: "24px 0 0",
+  color: "#8f7c95",
+  fontSize: "12px",
+  lineHeight: "1.6",
+};
+
+const footerLink = {
+  color: "#9b5c78",
+  textDecoration: "underline",
 };

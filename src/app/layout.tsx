@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import CrispChat from '@/components/crisp-chat';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <CrispChat />
       </body>
     </html>
   );
