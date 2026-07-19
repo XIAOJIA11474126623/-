@@ -6,6 +6,8 @@ import { WelcomeEmail } from "@/emails/welcome";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const defaultAppUrl = "https://你的域名.com";
+const defaultFromEmail = "onboarding@resend.dev";
+const defaultRecipientEmail = "1474126623@qq.com";
 
 function sanitizeEmailText(value: string): string {
   return value.replace(/[\r\n]+/g, " ").trim();
@@ -69,16 +71,13 @@ export async function sendDailyLoveLetter(
 ): Promise<void> {
   const subjectUserName = sanitizeEmailText(userName) || "你";
   const loveLetter = await generateLoveLetter(userName);
-  const fromEmail = process.env.RESEND_FROM_EMAIL;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || defaultFromEmail;
+  const recipientEmail = process.env.RESEND_TO_EMAIL || defaultRecipientEmail || userEmail;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || defaultAppUrl;
-
-  if (!fromEmail) {
-    throw new Error("Missing required environment variable: RESEND_FROM_EMAIL");
-  }
 
   const { error } = await resend.emails.send({
     from: fromEmail,
-    to: userEmail,
+    to: recipientEmail,
     subject: `早安 ${subjectUserName}，今天也想你了`,
     react: WelcomeEmail({
       userName: subjectUserName,
