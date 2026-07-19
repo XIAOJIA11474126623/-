@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import CrispChat from '@/components/crisp-chat';
+import Navbar from '@/components/navbar';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default function RootLayout({
         className="antialiased min-h-screen bg-gradient-to-b from-[#1a1a2e] to-[#16213e]"
         suppressHydrationWarning
       >
+        <Navbar />
         {children}
         <CrispChat />
       </body>

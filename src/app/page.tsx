@@ -432,25 +432,7 @@ export default function HomePage() {
                 退出
               </Button>
             </>
-          ) : (
-            <>
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="rounded-md border border-white/10 text-[#f0e6d3] hover:bg-white/10 hover:text-white"
-              >
-                <Link href="/login">登录</Link>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                className="rounded-md bg-[#ff6b9d] text-[#1a1a2e] hover:bg-[#ff82ad]"
-              >
-                <Link href="/register">注册</Link>
-              </Button>
-            </>
-          )}
+          ) : null}
         </div>
 
         <motion.section
